@@ -1,8 +1,9 @@
 [package]
-name = "ffcopt"
+name = "eggstraction"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 egg = "0.10.0"
 ordered-float = "5.0.0"
+serde_json = "1.0.140"
