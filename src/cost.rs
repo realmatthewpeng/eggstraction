@@ -55,6 +55,8 @@ impl CostFunction<Math> for MathCostFn {
                 // cheaper constant‐mul if either side is a lit
                 if matches!(self.egraph[*a].nodes[0], Math::Constant(_))
                  || matches!(self.egraph[*b].nodes[0], Math::Constant(_))
+                 || self.egraph[*a].data == Type::Fp
+                 || self.egraph[*b].data == Type::Fp
                 {
                     "*const"
                 } else {
