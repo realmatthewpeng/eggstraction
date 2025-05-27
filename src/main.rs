@@ -2,17 +2,22 @@ mod language;
 mod rules;
 mod analysis;
 mod cost;
+mod greedy_dag;
 
 use std::{
     fs,
     io::{BufRead, BufReader},
     collections::HashMap,
 };
-use egg::{Runner, Extractor, RecExpr};
+use egg::{Runner, Extractor, RecExpr, EGraph, Analysis, Language, Id};
 use language::Math;
 use rules::rules;
 use analysis::{Type, TypeAnalysis};
 use cost::MathCostFn;
+use std::fmt::Display;
+use crate::greedy_dag::Extractor as GreedyDagExtractorTrait;
+use egraph_serialize::{ClassId};
+
 
 fn main() {
     // --- load symbol types from JSON ---
@@ -58,6 +63,18 @@ fn main() {
         let ext1  = Extractor::new(&runner1.egraph, cost1);
         let (best_cost, best) = ext1.find_best(runner1.roots[0]);
 
+        let mut serialized = egg_to_serialized_egraph(&runner0.egraph);
+        serialized.root_eclasses.push(ClassId::from(format!("{}", runner0.roots[0])));
+        println!("Serialized egraph: {:?}", serialized);
+        let extractor = greedy_dag::FasterGreedyDagExtractor;
+        let extraction_result = GreedyDagExtractorTrait::extract(&extractor, &serialized, &serialized.root_eclasses);
+
+        extraction_result.check(&serialized);
+        let tree = extraction_result.tree_cost(&serialized, &serialized.root_eclasses);
+        let dag = extraction_result.dag_cost(&serialized, &serialized.root_eclasses);
+        println!("Tree cost: {}", tree);
+        println!("DAG cost: {}", dag);
+
         // 3) print both
         println!("In             : {}", line);
         println!("Initial cost   : {}", init_cost);
@@ -65,4 +82,31 @@ fn main() {
         println!("Optimized cost : {}", best_cost);
         println!("---");
     }
+}
+
+pub fn egg_to_serialized_egraph<L, A>(egraph: &EGraph<L, A>) -> egraph_serialize::EGraph
+where
+    L: Language + Display,
+    A: Analysis<L>,
+{
+    use egraph_serialize::*;
+    let mut out = EGraph::default();
+    for class in egraph.classes() {
+        for (i, node) in class.nodes.iter().enumerate() {
+            out.add_node(
+                format!("{}.{}", class.id, i),
+                Node {
+                    op: node.to_string(),
+                    children: node
+                        .children()
+                        .iter()
+                        .map(|id| NodeId::from(format!("{}.0", id)))
+                        .collect(),
+                    eclass: ClassId::from(format!("{}", class.id)),
+                    cost: Cost::new(1.0).unwrap(),
+                },
+            )
+        }
+    }
+    out
 }

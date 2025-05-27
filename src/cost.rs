@@ -65,7 +65,14 @@ impl CostFunction<Math> for MathCostFn {
             }
             Math::Add(_)       => "+",
             Math::Sub(_)       => "-",
-            Math::Sq(_)        => "sq",
+            Math::Sq(_a) => {
+                // if let Some(name) = id_to_name(&self.egraph, *a) {
+                //     println!("Math::Sq enode: sq({}) {:?}", name, a);
+                // } else {
+                //     println!("Math::Sq enode: sq({:?})", a);
+                // }
+                "sq"
+            },
             _                  => "",
         };
 
@@ -77,4 +84,15 @@ impl CostFunction<Math> for MathCostFn {
             .unwrap_or(0);
         enode.fold(op_cost, |sum, id| sum + child_costs(id))
     }
+}
+
+fn id_to_name(egraph: &EGraph<Math, TypeAnalysis>, id: Id) -> Option<String> {
+    egraph[id]
+        .nodes
+        .iter()
+        .find_map(|n| match n {
+            Math::Symbol(sym) => Some(sym.to_string()),
+            Math::Constant(cons) => Some(cons.to_string()),
+            _ => None,
+        })
 }
