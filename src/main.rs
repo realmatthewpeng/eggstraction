@@ -2,21 +2,17 @@ mod language;
 mod rules;
 mod analysis;
 mod cost;
-mod greedy_dag;
 
 use std::{
     fs,
     io::{BufRead, BufReader},
     collections::HashMap,
 };
-use egg::{Runner, Extractor, RecExpr, EGraph, Analysis, Language, Id, LpExtractor, AstSize};
+use egg::{Runner, Extractor, RecExpr, LpExtractor};
 use language::Math;
 use rules::rules;
 use analysis::{Type, TypeAnalysis};
 use cost::MathCostFn;
-use std::fmt::Display;
-use crate::greedy_dag::Extractor as GreedyDagExtractorTrait;
-use egraph_serialize::{ClassId};
 
 
 fn main() {
