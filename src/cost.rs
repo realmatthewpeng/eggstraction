@@ -1,5 +1,5 @@
 use std::{collections::HashMap, fs};
-use egg::{CostFunction, EGraph, Id, Language};
+use egg::{CostFunction, EGraph, Id, Language, LpCostFunction, Analysis};
 use crate::language::Math;
 use crate::analysis::{Type, TypeAnalysis};
 
@@ -95,4 +95,17 @@ fn id_to_name(egraph: &EGraph<Math, TypeAnalysis>, id: Id) -> Option<String> {
             Math::Constant(cons) => Some(cons.to_string()),
             _ => None,
         })
+}
+
+impl LpCostFunction<Math, TypeAnalysis> for MathCostFn {
+    fn node_cost(&mut self, _egraph: &EGraph<Math, TypeAnalysis>, _eclass: Id, _enode: &Math) -> f64 {
+        match _enode {
+            Math::Inv(_)       => 80.0,
+            Math::Mul([a, b])  => 10.0,
+            Math::Add(_)       => 1.0,
+            Math::Sub(_)       => 1.0,
+            Math::Sq(_a) => 6.0,
+            _                 => 0.0,
+        }   
+    }
 }

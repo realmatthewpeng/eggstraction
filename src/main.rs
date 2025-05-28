@@ -9,7 +9,7 @@ use std::{
     io::{BufRead, BufReader},
     collections::HashMap,
 };
-use egg::{Runner, Extractor, RecExpr, EGraph, Analysis, Language, Id};
+use egg::{Runner, Extractor, RecExpr, EGraph, Analysis, Language, Id, LpExtractor, AstSize};
 use language::Math;
 use rules::rules;
 use analysis::{Type, TypeAnalysis};
@@ -56,57 +56,32 @@ fn main() {
 
         // 2) compute optimized cost (with your rules)
         let runner1: Runner<Math, TypeAnalysis> =
-            Runner::new(analysis)            // reuse the analysis struct
+            Runner::new(analysis.clone())            // reuse the analysis struct
                   .with_expr(&expr)
                   .run(&rules());
         let cost1 = MathCostFn::new(runner1.egraph.clone(), "cost_model.json");
         let ext1  = Extractor::new(&runner1.egraph, cost1);
         let (best_cost, best) = ext1.find_best(runner1.roots[0]);
+        println!("{:?}", runner1.egraph);
 
-        let mut serialized = egg_to_serialized_egraph(&runner0.egraph);
-        serialized.root_eclasses.push(ClassId::from(format!("{}", runner0.roots[0])));
-        println!("Serialized egraph: {:?}", serialized);
-        let extractor = greedy_dag::FasterGreedyDagExtractor;
-        let extraction_result = GreedyDagExtractorTrait::extract(&extractor, &serialized, &serialized.root_eclasses);
 
-        extraction_result.check(&serialized);
-        let tree = extraction_result.tree_cost(&serialized, &serialized.root_eclasses);
-        let dag = extraction_result.dag_cost(&serialized, &serialized.root_eclasses);
-        println!("Tree cost: {}", tree);
-        println!("DAG cost: {}", dag);
+        let runner2: Runner<Math, TypeAnalysis> =
+            Runner::new(analysis.clone())   // clone the analysis so we can reuse it
+                  .with_expr(&expr)
+                  .run(&rules());                 // no rules
+        let mut egraph = runner2.egraph.clone();
+        let root = egraph.add_expr(&expr);
+
+        let cost2 = MathCostFn::new(runner2.egraph.clone(), "cost_model.json");
+
+        let lp_best = LpExtractor::new(&egraph, cost2).solve(root);
+        println!("LP best: {}", lp_best);
 
         // 3) print both
         println!("In             : {}", line);
         println!("Initial cost   : {}", init_cost);
         println!("Optimized expr : {}", best);
         println!("Optimized cost : {}", best_cost);
-        println!("---");
+        // println!("---");
     }
-}
-
-pub fn egg_to_serialized_egraph<L, A>(egraph: &EGraph<L, A>) -> egraph_serialize::EGraph
-where
-    L: Language + Display,
-    A: Analysis<L>,
-{
-    use egraph_serialize::*;
-    let mut out = EGraph::default();
-    for class in egraph.classes() {
-        for (i, node) in class.nodes.iter().enumerate() {
-            out.add_node(
-                format!("{}.{}", class.id, i),
-                Node {
-                    op: node.to_string(),
-                    children: node
-                        .children()
-                        .iter()
-                        .map(|id| NodeId::from(format!("{}.0", id)))
-                        .collect(),
-                    eclass: ClassId::from(format!("{}", class.id)),
-                    cost: Cost::new(1.0).unwrap(),
-                },
-            )
-        }
-    }
-    out
 }
