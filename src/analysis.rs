@@ -1,6 +1,6 @@
-use egg::{Analysis, EGraph, Id, DidMerge};
-use std::collections::HashMap;
 use crate::language::Math;
+use egg::{Analysis, DidMerge, EGraph, Id};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Type {
@@ -11,13 +11,14 @@ pub enum Type {
 // Manual Deserialize so that JSON keys "fp" and "ext2" map to our Type
 impl<'de> serde::Deserialize<'de> for Type {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: serde::Deserializer<'de>
+    where
+        D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         match s.as_str() {
-            "fp"   => Ok(Type::Fp),
+            "fp" => Ok(Type::Fp),
             "ext2" => Ok(Type::Ext2),
-            other  => Err(serde::de::Error::unknown_variant(other, &["fp","ext2"])),
+            other => Err(serde::de::Error::unknown_variant(other, &["fp", "ext2"])),
         }
     }
 }
@@ -52,9 +53,7 @@ impl Analysis<Math> for TypeAnalysis {
         }
         // ring ops / sq / inv just propagate the type of their first child
         match enode {
-            Math::Add([a,b])
-            | Math::Sub([a,b])
-            | Math::Mul([a,b]) => {
+            Math::Add([a, b]) | Math::Sub([a, b]) | Math::Mul([a, b]) => {
                 let ta = egraph[*a].data.clone();
                 let tb = egraph[*b].data.clone();
                 if ta == Type::Ext2 || tb == Type::Ext2 {
@@ -105,7 +104,6 @@ impl Analysis<Math> for TypeAnalysis {
         // no changes needed
     }
 }
-
 
 impl Default for TypeAnalysis {
     fn default() -> Self {

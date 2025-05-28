@@ -1,8 +1,7 @@
-use egg::{*};
+use egg::*;
 use ordered_float::NotNan;
 
 pub type Constant = NotNan<f64>;
-
 
 define_language! {
     pub enum Math {
