@@ -24,11 +24,16 @@ fn main() {
     // --- read each test expression ---
     let reader = BufReader::new(fs::File::open("tests.txt").expect("Could not open tests.txt"));
 
+    let mut counter = 0;
     for line in reader.lines().filter_map(Result::ok) {
         let line = line.trim();
         if line.is_empty() {
             continue;
         }
+
+        // Counter for each test expression
+        counter += 1;
+        println!("Optimizing_Test_Case {}: ", counter);
 
         // parse into egg’s RecExpr
         let expr: RecExpr<Math> = line
@@ -47,6 +52,14 @@ fn main() {
         let unopt_tree_extractor = Extractor::new(&unopt_tree_runner.egraph, unopt_tree_costfn);
         let (unopt_tree_cost, _) = unopt_tree_extractor.find_best(unopt_tree_runner.roots[0]);
 
+        let unopt_dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
+            .with_expr(&expr)
+            .run(&[]);
+        let unopt_dag_costfn = MathCostFn::new(unopt_dag_runner.egraph.clone(), "cost_model.json");
+        let mut unopt_dag_egraph = unopt_dag_runner.egraph.clone();
+        let unopt_dag_egraph_root = unopt_dag_egraph.add_expr(&expr);
+        LpExtractor::new(&unopt_dag_egraph, unopt_dag_costfn).solve(unopt_dag_egraph_root);
+
         // 2. compute optimized cost (with rewrites)
         let tree_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // reuse the analysis struct
             .with_expr(&expr)
@@ -57,18 +70,19 @@ fn main() {
 
         let dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
             .with_expr(&expr)
-            .run(&rules()); // no rules
+            .run(&rules());
         let dag_costfn = MathCostFn::new(dag_runner.egraph.clone(), "cost_model.json");
         let mut dag_egraph = dag_runner.egraph.clone();
         let dag_egraph_root = dag_egraph.add_expr(&expr);
         let dag_best_expr = LpExtractor::new(&dag_egraph, dag_costfn).solve(dag_egraph_root);
 
         // 3) print both
-        println!("In                  : {}", line);
-        println!("Initial tree cost   : {}", unopt_tree_cost);
-        println!("Optimized tree expr : {}", best_tree_expr);
-        println!("Optimized tree cost : {}", best_tree_cost);
-        println!("Optimized DAG expr  : {}", dag_best_expr);
-        println!("---");
+        println!(">>>");
+        println!("Input expr           : {}\n", line);
+        println!("Tree: Initial cost   : {}", unopt_tree_cost);
+        println!("Tree: Optimized expr : {}", best_tree_expr);
+        println!("Tree: Optimized cost : {}\n", best_tree_cost);
+        println!("DAG: Optimized expr  : {}", dag_best_expr);
+        println!("<<<");
     }
 }
