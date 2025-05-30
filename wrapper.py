@@ -24,8 +24,9 @@ for i, test_output in enumerate(parts[1:], start=1):
         for data in results[1:-1]:
             print(data)
     else:
-        raise RuntimeError("No match found.")
+        print("Possible Error: No results found!")
+        break
 
 if result.returncode != 0:
-    print("Rust program errors:")
+    print("stderr output:")
     print(result.stderr)

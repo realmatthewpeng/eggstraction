@@ -31,7 +31,6 @@ fn main() {
             continue;
         }
 
-        // Counter for each test expression
         counter += 1;
         println!("Optimizing_Test_Case {}: ", counter);
 
@@ -40,7 +39,6 @@ fn main() {
             .parse()
             .unwrap_or_else(|_| panic!("Invalid expr: {}", line));
 
-        // make a fresh TypeAnalysis + Runner
         let analysis = TypeAnalysis::new(symbol_map.clone());
 
         // 1. compute initial cost (no rewrites)
@@ -56,9 +54,8 @@ fn main() {
             .with_expr(&expr)
             .run(&[]);
         let unopt_dag_costfn = MathCostFn::new(unopt_dag_runner.egraph.clone(), "cost_model.json");
-        let mut unopt_dag_egraph = unopt_dag_runner.egraph.clone();
-        let unopt_dag_egraph_root = unopt_dag_egraph.add_expr(&expr);
-        LpExtractor::new(&unopt_dag_egraph, unopt_dag_costfn).solve(unopt_dag_egraph_root);
+        let unopt_dag_roots = unopt_dag_runner.roots.iter().map(|id| unopt_dag_runner.egraph.find(*id)).collect::<Vec<_>>();
+        LpExtractor::new(&unopt_dag_runner.egraph, unopt_dag_costfn).solve_multiple(&unopt_dag_roots);
 
         // 2. compute optimized cost (with rewrites)
         let tree_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // reuse the analysis struct
@@ -71,12 +68,16 @@ fn main() {
         let dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
             .with_expr(&expr)
             .run(&rules());
+        println!(
+            "DAG Runner stopped after {} iterations, reason: {:?}",
+            dag_runner.iterations.len(),
+            dag_runner.stop_reason
+        );
+        // println!("{}", dag_runner.egraph.dot());
         let dag_costfn = MathCostFn::new(dag_runner.egraph.clone(), "cost_model.json");
-        let mut dag_egraph = dag_runner.egraph.clone();
-        let dag_egraph_root = dag_egraph.add_expr(&expr);
-        let dag_best_expr = LpExtractor::new(&dag_egraph, dag_costfn).solve(dag_egraph_root);
+        let dag_roots = dag_runner.roots.iter().map(|id| dag_runner.egraph.find(*id)).collect::<Vec<_>>();
+        let (dag_best_expr, _) = LpExtractor::new(&dag_runner.egraph, dag_costfn).solve_multiple(&dag_roots);
 
-        // 3) print both
         println!(">>>");
         println!("Input expr           : {}\n", line);
         println!("Tree: Initial cost   : {}", unopt_tree_cost);
