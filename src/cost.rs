@@ -18,15 +18,8 @@ impl MathCostFn {
             egraph,
         }
     }
-}
 
-impl CostFunction<Math> for MathCostFn {
-    type Cost = usize;
-
-    fn cost<C>(&mut self, enode: &Math, mut child_costs: C) -> usize
-    where
-        C: FnMut(Id) -> usize,
-    {
+    pub fn calc_enode_cost(&mut self, enode: &Math) -> usize {
         // 1. Figure out the result‐type of this enode
         let enode_type = match enode {
             Math::Pair(_) => Type::Ext2,
@@ -66,24 +59,27 @@ impl CostFunction<Math> for MathCostFn {
             }
             Math::Add(_) => "+",
             Math::Sub(_) => "-",
-            Math::Sq(_a) => {
-                // if let Some(name) = id_to_name(&self.egraph, *a) {
-                //     println!("Math::Sq enode: sq({}) {:?}", name, a);
-                // } else {
-                //     println!("Math::Sq enode: sq({:?})", a);
-                // }
-                "sq"
-            }
+            Math::Sq(_a) => "sq",
             _ => "",
         };
 
-        // 3. Lookup cost and fold in children
-        let op_cost = self
-            .cost_models
+        // 3. Lookup cost and return it
+        self.cost_models
             .get(&enode_type)
             .and_then(|m| m.get(key))
             .cloned()
-            .unwrap_or(0);
+            .unwrap_or(0)
+    }
+}
+
+impl CostFunction<Math> for MathCostFn {
+    type Cost = usize;
+
+    fn cost<C>(&mut self, enode: &Math, mut child_costs: C) -> usize
+    where
+        C: FnMut(Id) -> usize,
+    {
+        let op_cost = self.calc_enode_cost(enode);
         enode.fold(op_cost, |sum, id| sum + child_costs(id))
     }
 }
@@ -103,61 +99,7 @@ impl LpCostFunction<Math, TypeAnalysis> for MathCostFn {
         _eclass: Id,
         _enode: &Math,
     ) -> f64 {
-        let enode_type = match _enode {
-            Math::Pair(_) => Type::Ext2,
-            Math::Fst(_) | Math::Snd(_) => Type::Fp,
-            Math::Add(_) | Math::Sub(_) | Math::Inv(_) | Math::Sq(_) => {
-                // get the Id of the first child
-                let first_child = _enode.children()[0];
-                // look up its Data
-                self.egraph[first_child].data.clone()
-            }
-            Math::Mul(_) => {
-                let ta = _enode.children()[0];
-                let tb = _enode.children()[1];
-                if self.egraph[ta].data == Type::Ext2 || self.egraph[tb].data == Type::Ext2 {
-                    Type::Ext2
-                } else {
-                    Type::Fp
-                }
-            }
-            Math::Constant(_) | Math::Symbol(_) => Type::Fp,
-        };
-
-        // 2. Pick the JSON key for this operator
-        let key = match _enode {
-            Math::Inv(_) => "inv",
-            Math::Mul([a, b]) => {
-                // cheaper constant‐mul if either side is a lit
-                if matches!(self.egraph[*a].nodes[0], Math::Constant(_))
-                    || matches!(self.egraph[*b].nodes[0], Math::Constant(_))
-                    || self.egraph[*a].data == Type::Fp
-                    || self.egraph[*b].data == Type::Fp
-                {
-                    "*const"
-                } else {
-                    "*"
-                }
-            }
-            Math::Add(_) => "+",
-            Math::Sub(_) => "-",
-            Math::Sq(_a) => {
-                // if let Some(name) = id_to_name(&self.egraph, *a) {
-                //     println!("Math::Sq enode: sq({}) {:?}", name, a);
-                // } else {
-                //     println!("Math::Sq enode: sq({:?})", a);
-                // }
-                "sq"
-            }
-            _ => "",
-        };
-
-        let op_cost = self
-            .cost_models
-            .get(&enode_type)
-            .and_then(|m| m.get(key))
-            .cloned()
-            .unwrap_or(0);
+       let op_cost = self.calc_enode_cost(_enode);
 
         op_cost as f64
     }

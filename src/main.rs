@@ -65,18 +65,27 @@ fn main() {
         let tree_extractor = Extractor::new(&tree_runner.egraph, tree_costfn);
         let (best_tree_cost, best_tree_expr) = tree_extractor.find_best(tree_runner.roots[0]);
 
-        let dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
+        let mut dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
+            .with_explanations_enabled()
             .with_expr(&expr)
             .run(&rules());
+
+        // for its in &dag_runner.iterations {
+        //     println!("{:?}", its.applied)
+        // }
+
         println!(
             "DAG Runner stopped after {} iterations, reason: {:?}",
             dag_runner.iterations.len(),
             dag_runner.stop_reason
         );
         // println!("{}", dag_runner.egraph.dot());
+
         let dag_costfn = MathCostFn::new(dag_runner.egraph.clone(), "cost_model.json");
         let dag_roots = dag_runner.roots.iter().map(|id| dag_runner.egraph.find(*id)).collect::<Vec<_>>();
         let (dag_best_expr, _) = LpExtractor::new(&dag_runner.egraph, dag_costfn).solve_multiple(&dag_roots);
+        let mut explanation = dag_runner.explain_equivalence(&expr, &dag_best_expr);
+        println!("Explanation:\n{}", explanation.get_flat_string());
 
         println!(">>>");
         println!("Input expr           : {}\n", line);
