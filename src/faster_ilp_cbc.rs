@@ -47,7 +47,18 @@ we get an optimal solution without cycles.
 
 */
 
-use super::*;
+use indexmap::IndexMap;
+
+use ordered_float::NotNan;
+pub type Cost = NotNan<f64>;
+
+pub const EPSILON_ALLOWANCE: f64 = 0.00001;
+
+use egraph_serialize::*;
+use rustc_hash::{FxHashSet};
+
+use crate::extractor_structures::*;
+
 use coin_cbc::{Col, Model};
 use indexmap::IndexSet;
 use std::fmt;
@@ -1150,3 +1161,4 @@ fn cycle_dfs(
         }
     }
 }
+

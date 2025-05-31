@@ -29,8 +29,7 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
         rw!("assoc-add";    "(+ ?a (+ ?b ?c))"     => "(+ (+ ?a ?b) ?c)"),
 
         // squaring
-        
-        //rw!("sq-to-mul";    "(sq ?x)"       => "(* ?x ?x)"),
+        rw!("sq-to-mul";    "(sq ?x)"       => "(* ?x ?x)"),
         rw!("mul-to-sq";    "(* ?x ?x)"     => "(sq ?x)"),
 
         // addition, subtraction
@@ -43,7 +42,7 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
         rw!("dist-right-sub";   "(- (* ?a ?c) (* ?b ?c))"   => "(* (- ?a ?b) ?c)"),
         
         // binomial
-        //rw!("binomial";         "(sq (+ ?a ?b))"    => "(+ (+ (sq ?a) (* 2 (* ?a ?b))) (sq ?b))"), // Conflicts w/ mul2-binomial
+        rw!("binomial";         "(sq (+ ?a ?b))"    => "(+ (+ (sq ?a) (* 2 (* ?a ?b))) (sq ?b))"),
         rw!("mul2-binomial";    "(* 2 (* ?a ?b))"   => "(- (- (sq (+ ?a ?b)) (sq ?a)) (sq ?b))"),
     ]
 }
