@@ -1,4 +1,4 @@
-use crate::analysis::TypeAnalysis;
+use crate::analysis::{Type, TypeAnalysis};
 use crate::language::Math;
 use egg::{Rewrite, rewrite as rw, EGraph, Id, Subst};
 
@@ -6,14 +6,15 @@ fn is_not_same(a: &str, b: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id,
     let a = a.parse().unwrap();
     let b = b.parse().unwrap();
     move |egraph, _, subst| {
-        // println!("Checking if {} != {}: {}", egraph.find(subst[a]), egraph.find(subst[b]), egraph.find(subst[a]) != egraph.find(subst[b]));
-        // for node in &egraph[subst[a]].nodes {
-        //     println!("Node in e-class for a: {:?}", node);
-        // }
-        // for node in &egraph[subst[b]].nodes {
-        //     println!("Node in e-class for b: {:?}", node);
-        // }
         egraph.find(subst[a]) != egraph.find(subst[b])
+    }
+}
+
+fn is_constant(a: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id, &Subst) -> bool {
+    let a = a.parse().unwrap();
+    move |egraph, _, subst| {
+        let ta = &egraph[egraph.find(subst[a])].data;
+        *ta == Type::Fp
     }
 }
 
@@ -44,6 +45,28 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
         
         // binomial
         rw!("binomial";         "(sq (+ ?a ?b))"    => "(+ (+ (sq ?a) (* 2 (* ?a ?b))) (sq ?b))"),
+
+        // Benchmark 1
+        rw!("benchmark1";   "(+ (* ?a ?b) (* ?c ?d))"   => "(- (- (* (+ ?a ?c) (+ ?d ?b)) (* ?a ?d)) (* ?c ?b))"
+                                                            if is_not_same("?a", "?b")
+                                                            if is_not_same("?a", "?c")
+                                                            if is_not_same("?a", "?d")
+                                                            if is_not_same("?b", "?c")
+                                                            if is_not_same("?b", "?d") 
+                                                            if is_not_same("?c", "?d")),
+
+        // Benchmark 2
         rw!("mul2-binomial";    "(* 2 (* ?a ?b))"   => "(- (- (sq (+ ?a ?b)) (sq ?a)) (sq ?b))"),
+
+    ]
+}
+
+pub fn pair_rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
+    vec![
+
+    rw!("pair-add";     "(+ (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
+    rw!("pair-sub";     "(- (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (- ?a ?c) (- ?b ?d))"),
+    rw!("pair-mul-const"; "(* (pair ?a ?b) ?c)"  =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
+
     ]
 }

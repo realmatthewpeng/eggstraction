@@ -104,3 +104,26 @@ impl LpCostFunction<Math, TypeAnalysis> for MathCostFn {
         op_cost as f64
     }
 }
+
+pub struct PairCostFn;
+
+impl CostFunction<Math> for PairCostFn {
+    type Cost = usize;
+
+    fn cost<C>(&mut self, enode: &Math, mut child_costs: C) -> usize
+    where
+        C: FnMut(Id) -> usize,
+    {
+        let op_cost = match enode {
+            Math::Constant(_) => 0,
+            Math::Symbol(_) => 0,
+            Math::Pair(_) => 10,
+            _ => 2,
+        };
+        match enode {
+            Math::Pair(_) => enode.fold(10, |sum: usize, id| sum + op_cost * child_costs(id)),
+            _ => enode.fold(0, |sum: usize, id| sum + op_cost * child_costs(id))
+
+        }
+    }
+}
