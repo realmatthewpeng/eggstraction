@@ -2,18 +2,17 @@
 // For example (+ (* x x ) (* x x )) has one mulitplication
 // included in the cost.
 
-use indexmap::IndexMap;
-
-use ordered_float::NotNan;
-pub type Cost = NotNan<f64>;
-
-pub const INFINITY: Cost = unsafe { NotNan::new_unchecked(std::f64::INFINITY) };
-
-use egraph_serialize::*;
-use rustc_hash::{FxHashMap};
 use std::collections::HashMap;
 
+use egraph_serialize::*;
+use indexmap::IndexMap;
+use ordered_float::NotNan;
+use rustc_hash::FxHashMap;
+
 use crate::extractor_structures::*;
+
+pub type Cost = NotNan<f64>;
+pub const INFINITY: Cost = unsafe { NotNan::new_unchecked(std::f64::INFINITY) };
 
 struct CostSet {
     // It's slightly faster if this is an HashMap rather than an fxHashMap.

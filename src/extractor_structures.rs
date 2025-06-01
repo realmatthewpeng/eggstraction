@@ -1,16 +1,17 @@
+use egraph_serialize::*;
+use indexmap::IndexMap;
+use ordered_float::NotNan;
+
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::HashMap;
+pub const INFINITY: Cost = unsafe { NotNan::new_unchecked(std::f64::INFINITY) };
+
 /** A data structure to maintain a queue of unique elements.
 
 Notably, insert/pop operations have O(1) expected amortized runtime complexity.
 
 Thanks @Bastacyclop for the implementation!
 */
-use rustc_hash::{FxHashMap, FxHashSet};
-use egraph_serialize::*;
-use std::collections::HashMap;
-use indexmap::IndexMap;
-use ordered_float::NotNan;
-pub const INFINITY: Cost = unsafe { NotNan::new_unchecked(std::f64::INFINITY) };
-
 #[derive(Clone)]
 pub(crate) struct UniqueQueue<T>
 where
