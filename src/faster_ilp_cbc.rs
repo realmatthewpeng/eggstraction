@@ -46,6 +46,7 @@ we get an optimal solution without cycles.
 
 
 */
+#![allow(dead_code)]
 
 use std::fmt;
 use std::time::SystemTime;
@@ -242,6 +243,7 @@ fn extract(
         .collect();
 
     let initial_result = super::faster_greedy_dag::FasterGreedyDagExtractor.extract(egraph, &roots);
+    initial_result.check(egraph);
     let initial_result_cost = initial_result.dag_cost(egraph, &roots);
 
     // For classes where we know the choice already, we set the nodes early.
@@ -587,7 +589,7 @@ fn remove_single_zero_cost(
             for parent in parents {
                 for i in (0..vars[parent].childrens_classes.len()).rev() {
                     if vars[parent].childrens_classes[i].contains(e) {
-                        vars[parent].childrens_classes[i].remove(e);
+                        vars[parent].childrens_classes[i].swap_remove(e);
                         removed += 1;
                     }
                 }

@@ -20,6 +20,8 @@ use language::Math;
 use rules::rules;
 
 fn main() {
+    env_logger::init();
+
     // --- load symbol types from JSON ---
     let sym_json =
         fs::read_to_string("symbol_types.json").expect("Could not open symbol_types.json");
@@ -53,7 +55,7 @@ fn main() {
         let unopt_tree_costfn =
             MathCostFn::new(unopt_tree_runner.egraph.clone(), "cost_model.json");
         let unopt_tree_extractor = Extractor::new(&unopt_tree_runner.egraph, unopt_tree_costfn);
-        let (unopt_tree_cost, _) = unopt_tree_extractor.find_best(unopt_tree_runner.roots[0]);
+        let (unopt_tree_cost, _) = unopt_tree_extractor.find_best(unopt_tree_runner.egraph.find(unopt_tree_runner.roots[0]));
 
         let unopt_dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
             .with_expr(&expr)
@@ -64,7 +66,7 @@ fn main() {
             egg_to_serialized_egraph::<Math, _>(&unopt_dag_runner.egraph, unopt_dag_costfn);
         unopt_dag_serialized
             .root_eclasses
-            .push(ClassId::from(format!("{}", unopt_dag_runner.roots[0])));
+            .push(ClassId::from(format!("{}", unopt_dag_runner.egraph.find(unopt_dag_runner.roots[0]))));
         let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
         let unopt_dag_result =
             unopt_dag_extractor.extract(&unopt_dag_serialized, &unopt_dag_serialized.root_eclasses);
@@ -78,14 +80,16 @@ fn main() {
             .run(&rules());
         let tree_costfn = MathCostFn::new(tree_runner.egraph.clone(), "cost_model.json");
         let tree_extractor = Extractor::new(&tree_runner.egraph, tree_costfn);
-        let (best_tree_cost, best_tree_expr) = tree_extractor.find_best(tree_runner.roots[0]);
+        let (best_tree_cost, best_tree_expr) = tree_extractor.find_best(tree_runner.egraph.find(tree_runner.roots[0]));
 
         let dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) // clone the analysis so we can reuse it
             .with_explanations_enabled()
             .with_expr(&expr)
             .run(&rules());
         // for its in &dag_runner.iterations {
-        //     println!("{:?}", its.applied)
+        //     println!("{:?}", dag_runner.roots);
+        //     println!("{:?}", dag_runner.egraph.find(dag_runner.roots[0]));
+        //     println!("{:?}", its.applied);
         // }
         // println!(
         //     "DAG Runner stopped after {} iterations, reason: {:?}",
@@ -98,8 +102,9 @@ fn main() {
             egg_to_serialized_egraph::<Math, _>(&dag_runner.egraph, dag_costfn);
         dag_serialized
             .root_eclasses
-            .push(ClassId::from(format!("{}", dag_runner.roots[0])));
+            .push(ClassId::from(format!("{}", dag_runner.egraph.find(dag_runner.roots[0]))));
         let dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
+        // println!("{:?}", dag_serialized);
         let dag_result = dag_extractor.extract(&dag_serialized, &dag_serialized.root_eclasses);
         dag_result.check(&dag_serialized);
         // let tree = extraction_result.tree_cost(&serialized, &serialized.root_eclasses);

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use egraph_serialize::*;
 use indexmap::IndexMap;
 use ordered_float::NotNan;
@@ -57,8 +59,7 @@ where
         res.as_ref().map(|t| self.set.remove(t));
         res
     }
-
-    #[allow(dead_code)]
+    
     pub fn is_empty(&self) -> bool {
         let r = self.queue.is_empty();
         debug_assert_eq!(r, self.set.is_empty());

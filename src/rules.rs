@@ -35,11 +35,12 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
         // addition, subtraction
         rw!("sub";          "(- (+ ?a ?b) ?b)"      => "?a"),
         rw!("add-same";     "(+ ?a ?a)"             => "(* 2 ?a)"),
+        rw!("sub-same";     "(- ?a ?a)"             => "0"),
 
         // distributivity
         rw!("dist-left";        "(* ?a (+ ?b ?c))"          => "(+ (* ?a ?b) (* ?a ?c))" if is_not_same("?b", "?c")),
         rw!("dist-right-add";   "(+ (* ?a ?c) (* ?b ?c))"   => "(* (+ ?a ?b) ?c)" if is_not_same("?a", "?b")),
-        rw!("dist-right-sub";   "(- (* ?a ?c) (* ?b ?c))"   => "(* (- ?a ?b) ?c)"),
+        rw!("dist-right-sub";   "(- (* ?a ?c) (* ?b ?c))"   => "(* (- ?a ?b) ?c)" if is_not_same("?a", "?b")),
         
         // binomial
         rw!("binomial";         "(sq (+ ?a ?b))"    => "(+ (+ (sq ?a) (* 2 (* ?a ?b))) (sq ?b))"),
