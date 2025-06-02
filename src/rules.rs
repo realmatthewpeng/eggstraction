@@ -1,4 +1,4 @@
-use crate::analysis::{TypeAnalysis};
+use crate::analysis::{TypeAnalysis, FieldType};
 use crate::language::Math;
 use egg::{Rewrite, rewrite as rw, EGraph, Id, Subst};
 
@@ -10,13 +10,13 @@ fn is_not_same(a: &str, b: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id,
     }
 }
 
-// fn is_constant(a: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id, &Subst) -> bool {
-//     let a = a.parse().unwrap();
-//     move |egraph, _, subst| {
-//         let ta = &egraph[egraph.find(subst[a])].data;
-//         *ta == FieldType::Fp
-//     }
-// }
+fn is_constant(a: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id, &Subst) -> bool {
+    let a = a.parse().unwrap();
+    move |egraph, _, subst| {
+        let ta = &egraph[egraph.find(subst[a])].data;
+        *ta == FieldType::Constant
+    }
+}
 
 // Rules are actually automatically bidirectional once triggered by lhs
 pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
@@ -61,12 +61,12 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
     ]
 }
 
-// pub fn pair_rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
-//     vec![
+pub fn pair_rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
+    vec![
 
-//     rw!("pair-add";     "(+ (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
-//     rw!("pair-sub";     "(- (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (- ?a ?c) (- ?b ?d))"),
-//     rw!("pair-mul-const"; "(* (pair ?a ?b) ?c)"  =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
+    rw!("pair-add";     "(+ (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
+    rw!("pair-sub";     "(- (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (- ?a ?c) (- ?b ?d))"),
+    rw!("pair-mul-const"; "(* (pair ?a ?b) ?c)"  =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
 
-//     ]
-// }
+    ]
+}

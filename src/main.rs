@@ -14,10 +14,10 @@ use egg::{EGraph, Extractor, RecExpr, Runner};
 use egraph_serialize::ClassId;
 
 use analysis::{FieldType, TypeAnalysis};
-use cost::MathCostFn;
+use cost::{MathCostFn, PairCostFn};
 use extractor_structures::Extractor as NewExtractor;
 use language::Math;
-use rules::rules;
+use rules::{rules, pair_rules};
 
 fn main() {
     env_logger::init();
@@ -42,11 +42,19 @@ fn main() {
         println!("Optimizing_Test_Case {}: ", counter);
 
         // parse into egg’s RecExpr
-        let expr: RecExpr<Math> = line
+        let orig_expr: RecExpr<Math> = line
             .parse()
             .unwrap_or_else(|_| panic!("Invalid expr: {}", line));
 
         let analysis = TypeAnalysis::new(symbol_map.clone());
+
+        let simplifier: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone()) 
+            .with_expr(&orig_expr)
+            .run(&pair_rules());
+        let pair_costfn = PairCostFn;
+        let simplifier_extractor = Extractor::new(&simplifier.egraph, pair_costfn);
+        let (_expr_cost, expr) =
+            simplifier_extractor.find_best(simplifier.egraph.find(simplifier.roots[0]));
 
         // 1. compute initial cost (no rewrites)
         let unopt_runner: Runner<Math, TypeAnalysis> =
@@ -115,13 +123,14 @@ fn main() {
         .clone();
 
         println!(">>>");
-        println!("Input expr           : {}", line);
-        println!("Tree: Initial cost   : {}", unopt_tree_cost);
-        println!("Tree: Optimized expr : {}", best_tree_expr);
+        println!("Input expr           : {}",   line);
+        println!("Simplified expr      : {}\n", expr);
+        println!("Tree: Initial cost   : {}",   unopt_tree_cost);
+        println!("Tree: Optimized expr : {}",   best_tree_expr);
         println!("Tree: Optimized cost : {}\n", best_tree_cost);
-        println!("DAG:  Initial cost   : {}", unopt_dag_cost);
-        println!("DAG:  Optimized expr : {}", best_dag_expr);
-        println!("DAG:  Optimized cost : {}", best_dag_cost);
+        println!("DAG:  Initial cost   : {}",   unopt_dag_cost);
+        println!("DAG:  Optimized expr : {}",   best_dag_expr);
+        println!("DAG:  Optimized cost : {}",   best_dag_cost);
         println!("<<<");
     }
 }
