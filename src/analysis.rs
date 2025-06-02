@@ -10,12 +10,15 @@ pub enum FieldType {
     /// Extension field of degree n over Fp
     /// Fp2, Fp4, Fp8, etc.
     FpExt(u32),
+
+    Constant,
 }
 
 impl FieldType {
     /// Get the degree of the field extension
     pub fn degree(&self) -> u32 {
         match self {
+            FieldType::Constant => 0,
             FieldType::Fp => 1,
             FieldType::FpExt(n) => *n,
         }
@@ -42,6 +45,8 @@ impl FieldType {
                 let raw = lcm(*n1, *n2);
                 FieldType::FpExt(raw)
             }
+            (FieldType::Constant,_) => {other.clone()}
+            (_,FieldType::Constant) => {self.clone()}
         }
     }
 
@@ -63,6 +68,8 @@ impl FieldType {
             } else {
                 Err(format!("Field degree must be a power of 2: {}", degree))
             }
+        } else if s=="constant" {
+            Ok(FieldType::Constant)
         } else {
             Err(format!("Unknown field type: {}", s))
         }
@@ -73,6 +80,7 @@ impl FieldType {
         match self {
             FieldType::Fp => "fp".to_string(),
             FieldType::FpExt(n) => format!("fp{}", n),
+            FieldType::Constant => "constant".to_string(),
         }
     }
 }
@@ -169,6 +177,7 @@ impl TypeAnalysis {
                     FieldType::FpExt(clamped)
                 }
             }
+            FieldType::Constant => FieldType::Constant
         }
     }
 }
@@ -214,7 +223,7 @@ impl Analysis<Math> for TypeAnalysis {
             Math::Inv(x) | Math::Sq(x) => egraph[*x].data.clone(),
 
             // Constants always live in base field
-            Math::Constant(_) => FieldType::Fp,
+            Math::Constant(_) => FieldType::Constant,
 
             // A symbol’s type comes from user‐provided “symbol_types”
             Math::Symbol(sym) => {

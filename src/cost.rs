@@ -109,7 +109,7 @@ impl MathCostFn {
                 type_a.lcm_extension(type_b)
             }
             Math::Inv(x) | Math::Sq(x) => self.egraph[*x].data.clone(),
-            Math::Constant(_) => FieldType::Fp,
+            Math::Constant(_) => FieldType::Constant,
             Math::Symbol(sym) => {
                 let name = sym.as_str().to_string();
                 self.symbol_types.get(&name).cloned().unwrap_or(FieldType::Fp)
@@ -123,15 +123,17 @@ impl MathCostFn {
             Math::Add(_) => "+".to_string(),
             Math::Sub(_) => "-".to_string(),
             Math::Mul([a, b]) => {
+                let type_a = &self.egraph[*a].data;
+                let type_b = &self.egraph[*b].data;
                 // If either child’s eclass has a Math::Constant(_), call it "*const"
                 let child_a_const = self.egraph[*a]
                     .nodes
                     .iter()
-                    .any(|n| matches!(n, Math::Constant(_)));
+                    .any(|n| matches!(n, Math::Constant(_))) || (*type_a == FieldType::Constant);
                 let child_b_const = self.egraph[*b]
                     .nodes
                     .iter()
-                    .any(|n| matches!(n, Math::Constant(_)));
+                    .any(|n| matches!(n, Math::Constant(_))) || (*type_b == FieldType::Constant);
                 if child_a_const || child_b_const {
                     "*const".to_string()
                 } else {

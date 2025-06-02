@@ -2,9 +2,9 @@
   "a0": "fp2",
   "a1": "fp2",
   "a2": "fp2",
-  "xi": "fp",
+  "xi": "constant",
   "b0": "fp2",
   "b1": "fp2",
   "b2": "fp2",
-  "yi": "fp"
+  "yi": "constant"
 }
