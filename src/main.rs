@@ -22,14 +22,32 @@ use rules::{rules, pair_rules};
 fn main() {
     env_logger::init();
 
+    let mut symbol_types_file = "symbol_types.json";
+    let mut cost_model_file = "cost_model.json";
+    let mut test_case_file = "tests.txt";
+
+    // Read command line arguments
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() == 1 {
+        ()
+    }
+    else if args.len() == 4 {
+        symbol_types_file = &args[1];
+        cost_model_file = &args[2];
+        test_case_file = &args[3];
+    } else {
+        eprintln!("Usage: {} <symbol_types.json> <cost_model.json> <tests.txt>", args[0]);
+        std::process::exit(1);
+    }
+
     // --- load symbol types from JSON ---
     let sym_json =
-        fs::read_to_string("symbol_types.json").expect("Could not open symbol_types.json");
+        fs::read_to_string(symbol_types_file).expect("Could not open symbol_types.json");
     let symbol_map: HashMap<String, FieldType> =
         serde_json::from_str(&sym_json).expect("Invalid JSON in symbol_types.json");
 
     // --- read each test expression ---
-    let reader = BufReader::new(fs::File::open("tests.txt").expect("Could not open tests.txt"));
+    let reader = BufReader::new(fs::File::open(test_case_file).expect("Could not open tests.txt"));
 
     let mut counter = 0;
     for line in reader.lines().filter_map(Result::ok) {
@@ -61,14 +79,14 @@ fn main() {
             Runner::new(analysis.clone()).with_expr(&expr).run(&[]);
 
         let unopt_tree_costfn =
-            MathCostFn::from_file(&unopt_runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&unopt_runner.egraph, cost_model_file).unwrap();
         let unopt_tree_extractor =
             Extractor::new(&unopt_runner.egraph, unopt_tree_costfn);
         let (unopt_tree_cost, _) = unopt_tree_extractor
             .find_best(unopt_runner.egraph.find(unopt_runner.roots[0]));
 
         let mut unopt_dag_costfn =
-            MathCostFn::from_file(&unopt_runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&unopt_runner.egraph, cost_model_file).unwrap();
         let mut unopt_dag_serialized =
             egg_to_serialized_egraph(&unopt_runner.egraph, &mut unopt_dag_costfn);
         unopt_dag_serialized
@@ -95,13 +113,13 @@ fn main() {
             Runner::new(analysis.clone()).with_expr(&expr).run(&rules());
 
         let tree_costfn =
-            MathCostFn::from_file(&runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&runner.egraph, cost_model_file).unwrap();
         let tree_extractor = Extractor::new(&runner.egraph, tree_costfn);
         let (best_tree_cost, best_tree_expr) = tree_extractor
             .find_best(runner.egraph.find(runner.roots[0]));
 
         let mut dag_costfn =
-            MathCostFn::from_file(&runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&runner.egraph, cost_model_file).unwrap();
         let mut dag_serialized =
             egg_to_serialized_egraph(&runner.egraph, &mut dag_costfn);
         dag_serialized
