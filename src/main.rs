@@ -49,28 +49,27 @@ fn main() {
         let analysis = TypeAnalysis::new(symbol_map.clone());
 
         // 1. compute initial cost (no rewrites)
-        let unopt_tree_runner: Runner<Math, TypeAnalysis> =
+        let unopt_runner: Runner<Math, TypeAnalysis> =
             Runner::new(analysis.clone()).with_expr(&expr).run(&[]);
-        let unopt_tree_costfn =
-            MathCostFn::from_file(&unopt_tree_runner.egraph, "cost_model.json").unwrap();
-        let unopt_tree_extractor =
-            Extractor::new(&unopt_tree_runner.egraph, unopt_tree_costfn);
-        let (unopt_tree_cost, _) = unopt_tree_extractor
-            .find_best(unopt_tree_runner.egraph.find(unopt_tree_runner.roots[0]));
 
-        let unopt_dag_runner: Runner<Math, TypeAnalysis> =
-            Runner::new(analysis.clone()).with_expr(&expr).run(&[]);
+        let unopt_tree_costfn =
+            MathCostFn::from_file(&unopt_runner.egraph, "cost_model.json").unwrap();
+        let unopt_tree_extractor =
+            Extractor::new(&unopt_runner.egraph, unopt_tree_costfn);
+        let (unopt_tree_cost, _) = unopt_tree_extractor
+            .find_best(unopt_runner.egraph.find(unopt_runner.roots[0]));
+
         let mut unopt_dag_costfn =
-            MathCostFn::from_file(&unopt_dag_runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&unopt_runner.egraph, "cost_model.json").unwrap();
         let mut unopt_dag_serialized =
-            egg_to_serialized_egraph(&unopt_dag_runner.egraph, &mut unopt_dag_costfn);
+            egg_to_serialized_egraph(&unopt_runner.egraph, &mut unopt_dag_costfn);
         unopt_dag_serialized
             .root_eclasses
             .push(ClassId::from(format!(
                 "{}",
-                unopt_dag_runner
+                unopt_runner
                     .egraph
-                    .find(unopt_dag_runner.roots[0])
+                    .find(unopt_runner.roots[0])
             )));
         let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
         let unopt_dag_result = unopt_dag_extractor.extract(
@@ -84,27 +83,24 @@ fn main() {
         );
 
         // 2. compute optimized cost (with rewrites)
-        let tree_runner: Runner<Math, TypeAnalysis> =
+        let runner: Runner<Math, TypeAnalysis> =
             Runner::new(analysis.clone()).with_expr(&expr).run(&rules());
-        let tree_costfn =
-            MathCostFn::from_file(&tree_runner.egraph, "cost_model.json").unwrap();
-        let tree_extractor = Extractor::new(&tree_runner.egraph, tree_costfn);
-        let (best_tree_cost, best_tree_expr) = tree_extractor
-            .find_best(tree_runner.egraph.find(tree_runner.roots[0]));
 
-        let dag_runner: Runner<Math, TypeAnalysis> = Runner::new(analysis.clone())
-            .with_explanations_enabled()
-            .with_expr(&expr)
-            .run(&rules());
+        let tree_costfn =
+            MathCostFn::from_file(&runner.egraph, "cost_model.json").unwrap();
+        let tree_extractor = Extractor::new(&runner.egraph, tree_costfn);
+        let (best_tree_cost, best_tree_expr) = tree_extractor
+            .find_best(runner.egraph.find(runner.roots[0]));
+
         let mut dag_costfn =
-            MathCostFn::from_file(&dag_runner.egraph, "cost_model.json").unwrap();
+            MathCostFn::from_file(&runner.egraph, "cost_model.json").unwrap();
         let mut dag_serialized =
-            egg_to_serialized_egraph(&dag_runner.egraph, &mut dag_costfn);
+            egg_to_serialized_egraph(&runner.egraph, &mut dag_costfn);
         dag_serialized
             .root_eclasses
             .push(ClassId::from(format!(
                 "{}",
-                dag_runner.egraph.find(dag_runner.roots[0])
+                runner.egraph.find(runner.roots[0])
             )));
         let dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
         let dag_result =
@@ -134,27 +130,40 @@ pub fn egg_to_serialized_egraph(
     egraph: &EGraph<Math, TypeAnalysis>,
     costfn: &mut MathCostFn,
 ) -> egraph_serialize::EGraph {
-    use egg::Language; // bring `.children()` into scope
+    use egg::Language; // brings `.children()` into scope
     use egraph_serialize::*;
+
+    // 1. Clone once, up front. Do *not* re-clone on every enode.
+    costfn.egraph = egraph.clone();
 
     let mut out = EGraph::default();
     for class in egraph.classes() {
         let eclass_id = class.id;
+        // Precompute the string version of this eclass:
+        let eclass_str = eclass_id.to_string();
+
         for (i, node) in class.nodes.iter().enumerate() {
-            // Update costfn's internal egraph to match the current one:
-            costfn.egraph = egraph.clone();
+            // 2. Compute cost now that costfn.egraph is already set:
             let cost = costfn.calc_enode_cost(node) as f64;
 
+            // 3. Build the unique node ID just once per enode:
+            let node_id = format!("{}.{}", eclass_str, i);
+
+            // 4. Build children list, reusing the same eclass string for prefix:
+            //    Each child is an eclass‐ID, so we do "<child_eclass>.0"
+            let mut children = Vec::with_capacity(node.children().len());
+            for &child_id in node.children() {
+                // only one format! child_id is usize, so:
+                children.push(NodeId::from(format!("{}.0", child_id)));
+            }
+
             out.add_node(
-                format!("{}.{}", eclass_id, i),
+                node_id,
                 Node {
                     op: node.to_string(),
-                    children: node
-                        .children()
-                        .iter()
-                        .map(|id| NodeId::from(format!("{}.0", id)))
-                        .collect(),
-                    eclass: ClassId::from(format!("{}", eclass_id)),
+                    children,
+                    // convert the eclass_str into a ClassId once:
+                    eclass: ClassId::from(eclass_str.clone()),
                     cost: Cost::new(cost).unwrap(),
                 },
             );
