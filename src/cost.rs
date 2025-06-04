@@ -20,9 +20,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostModel {
     /// Mapping e.g. "fp" → { "+": 1, "*": 3, ... }
-    pub costs: HashMap<String, HashMap<String, usize>>,
+    pub costs: HashMap<String, HashMap<String, f64>>,
     /// Fallbacks if a field‐type or operation is missing
-    pub default_costs: HashMap<String, usize>,
+    pub default_costs: HashMap<String, f64>,
 }
 
 impl CostModel {
@@ -33,14 +33,14 @@ impl CostModel {
     }
 
     /// Look up “costs[field_type_str][operation]”, or fallback to default_costs[operation], or 1.
-    pub fn get_cost(&self, field_type: &FieldType, operation: &str) -> usize {
+    pub fn get_cost(&self, field_type: &FieldType, operation: &str) -> f64 {
         let key = field_type.to_string();
         if let Some(field_costs) = self.costs.get(&key) {
             if let Some(&c) = field_costs.get(operation) {
                 return c;
             }
         }
-        self.default_costs.get(operation).copied().unwrap_or(0)
+        self.default_costs.get(operation).copied().unwrap_or(0.0)
     }
 }
 
@@ -151,23 +151,23 @@ impl MathCostFn {
     }
 
     /// This is the core “per‐enode” cost function used by both tree and DAG codepaths.
-    pub fn calc_enode_cost(&mut self, enode: &Math) -> usize {
+    pub fn calc_enode_cost(&mut self, enode: &Math) -> f64 {
         // 1. Find the resulting FieldType
         let enode_type = self.determine_enode_type(enode);
         // 2. Pick operation‐string
         let op = self.get_operation_string(enode);
         // 3. Look up numeric cost
-        self.cost_model.get_cost(&enode_type, &op)
+        self.cost_model.get_cost(&enode_type, &op) as f64
     }
 }
 
 /// === IMPLEMENT THE `CostFunction<Math>` TRAIT SO Extractor::new(...) COMPILES ===
 impl CostFunction<Math> for MathCostFn {
-    type Cost = usize;
+    type Cost = f64;
 
-    fn cost<C>(&mut self, enode: &Math, mut child_costs: C) -> usize
+    fn cost<C>(&mut self, enode: &Math, mut child_costs: C) -> f64
     where
-        C: FnMut(Id) -> usize,
+        C: FnMut(Id) -> f64,
     {
         let op_cost = self.calc_enode_cost(enode);
         // `enode.fold(initial, |sum, id| sum + child_costs(id))` adds up all children
