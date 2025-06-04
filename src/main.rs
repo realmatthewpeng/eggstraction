@@ -97,7 +97,7 @@ fn main() {
                     .egraph
                     .find(unopt_runner.roots[0])
             )));
-        let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
+        let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractorWithTimeout::<300>;
         let unopt_dag_result = unopt_dag_extractor.extract(
             &unopt_dag_serialized,
             &unopt_dag_serialized.root_eclasses,

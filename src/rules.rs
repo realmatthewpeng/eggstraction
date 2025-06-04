@@ -64,9 +64,12 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
 pub fn pair_rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
     vec![
 
-    rw!("pair-add";     "(+ (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
-    rw!("pair-sub";     "(- (pair ?a ?b) (pair ?c ?d))"  =>  "(pair (- ?a ?c) (- ?b ?d))"),
-    rw!("pair-mul-const"; "(* (pair ?a ?b) ?c)"  =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
+    rw!("pair-add";         "(+ (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
+    rw!("pair-sub";         "(- (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (- ?a ?c) (- ?b ?d))"),
+    rw!("pair-mul-const";   "(* (pair ?a ?b) ?c)"               =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
+    rw!("pair-sq";          "(sq (pair ?a ?b))"                 =>  "(* (pair ?a ?b) (pair ?a ?b))"),
+    rw!("pair-mul";         "(* (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (+ (* ?a ?c) (* (* ?b ?d) xi)) (+ (* ?a ?d) (* ?b ?c)))"),
+    // (a+bU)*(c+dU) = (a*c + a*dU + bU*c + bU*dU)
 
     ]
 }
