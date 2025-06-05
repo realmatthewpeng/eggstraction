@@ -134,7 +134,9 @@ impl MathCostFn {
                     .nodes
                     .iter()
                     .any(|n| matches!(n, Math::Constant(_))) || (*type_b == FieldType::Constant);
-                if child_a_const || child_b_const {
+                if *type_a != *type_b {
+                    "*const".to_string()
+                } else if child_a_const || child_b_const {
                     "*const".to_string()
                 } else {
                     "*".to_string()

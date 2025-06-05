@@ -65,8 +65,11 @@ impl FieldType {
                 Ok(FieldType::Fp)
             } else if degree.is_power_of_two() {
                 Ok(FieldType::FpExt(degree))
-            } else {
-                Err(format!("Field degree must be a power of 2: {}", degree))
+            } else if degree.is_multiple_of(2) {
+                Ok(FieldType::FpExt(degree))
+            }
+            else {
+                Err(format!("Field degree must be a multiple of 2: {}", degree))
             }
         } else if s=="constant" {
             Ok(FieldType::Constant)

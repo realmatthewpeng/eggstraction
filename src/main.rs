@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
 
-use egg::{EGraph, Extractor, RecExpr, Runner};
+use egg::{Language, EGraph, Extractor, RecExpr, Runner};
 use egraph_serialize::ClassId;
 
 use analysis::{FieldType, TypeAnalysis};
@@ -73,6 +73,7 @@ fn main() {
         let simplifier_extractor = Extractor::new(&simplifier.egraph, pair_costfn);
         let (_expr_cost, expr) =
             simplifier_extractor.find_best(simplifier.egraph.find(simplifier.roots[0]));
+        // println!("{}", _expr_cost);
 
         // 1. compute initial cost (no rewrites)
         let unopt_runner: Runner<Math, TypeAnalysis> =
@@ -85,10 +86,10 @@ fn main() {
         let (unopt_tree_cost, _) = unopt_tree_extractor
             .find_best(unopt_runner.egraph.find(unopt_runner.roots[0]));
 
-        let mut unopt_dag_costfn =
+        let unopt_dag_costfn =
             MathCostFn::from_file(&unopt_runner.egraph, cost_model_file).unwrap();
         let mut unopt_dag_serialized =
-            egg_to_serialized_egraph(&unopt_runner.egraph, &mut unopt_dag_costfn);
+            egg_to_serialized_egraph(&unopt_runner.egraph, unopt_dag_costfn);
         unopt_dag_serialized
             .root_eclasses
             .push(ClassId::from(format!(
@@ -97,7 +98,7 @@ fn main() {
                     .egraph
                     .find(unopt_runner.roots[0])
             )));
-        let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractorWithTimeout::<300>;
+        let unopt_dag_extractor = faster_ilp_cbc::FasterCbcExtractorWithTimeout::<180>;
         let unopt_dag_result = unopt_dag_extractor.extract(
             &unopt_dag_serialized,
             &unopt_dag_serialized.root_eclasses,
@@ -110,7 +111,19 @@ fn main() {
 
         // 2. compute optimized cost (with rewrites)
         let runner: Runner<Math, TypeAnalysis> =
-            Runner::new(analysis.clone()).with_expr(&expr).run(&rules());
+            Runner::new(analysis.clone())
+            .with_expr(&expr)
+            .with_iter_limit(100)
+            .with_node_limit(100_000)
+            .run(&rules());
+        // for its in &runner.iterations {
+        //     println!("{:?}", its.applied);
+        // }
+        // println!(
+        //     "DAG Runner stopped after {} iterations, reason: {:?}",
+        //     runner.iterations.len(),
+        //     runner.stop_reason
+        // );
 
         let tree_costfn =
             MathCostFn::from_file(&runner.egraph, cost_model_file).unwrap();
@@ -118,17 +131,17 @@ fn main() {
         let (best_tree_cost, best_tree_expr) = tree_extractor
             .find_best(runner.egraph.find(runner.roots[0]));
 
-        let mut dag_costfn =
+        let dag_costfn =
             MathCostFn::from_file(&runner.egraph, cost_model_file).unwrap();
         let mut dag_serialized =
-            egg_to_serialized_egraph(&runner.egraph, &mut dag_costfn);
+            egg_to_serialized_egraph(&runner.egraph, dag_costfn);
         dag_serialized
             .root_eclasses
             .push(ClassId::from(format!(
                 "{}",
                 runner.egraph.find(runner.roots[0])
             )));
-        let dag_extractor = faster_ilp_cbc::FasterCbcExtractor;
+        let dag_extractor = faster_ilp_cbc::FasterCbcExtractorWithTimeout::<180>;
         let dag_result =
             dag_extractor.extract(&dag_serialized, &dag_serialized.root_eclasses);
         dag_result.check(&dag_serialized);
@@ -155,45 +168,27 @@ fn main() {
 
 pub fn egg_to_serialized_egraph(
     egraph: &EGraph<Math, TypeAnalysis>,
-    costfn: &mut MathCostFn,
-) -> egraph_serialize::EGraph {
-    use egg::Language; // brings `.children()` into scope
+    mut costfn: MathCostFn,
+) -> egraph_serialize::EGraph
+{
     use egraph_serialize::*;
-
-    // 1. Clone once, up front. Do *not* re-clone on every enode.
-    costfn.egraph = egraph.clone();
-
     let mut out = EGraph::default();
     for class in egraph.classes() {
-        let eclass_id = class.id;
-        // Precompute the string version of this eclass:
-        let eclass_str = eclass_id.to_string();
-
         for (i, node) in class.nodes.iter().enumerate() {
-            // 2. Compute cost now that costfn.egraph is already set:
             let cost = costfn.calc_enode_cost(node) as f64;
-
-            // 3. Build the unique node ID just once per enode:
-            let node_id = format!("{}.{}", eclass_str, i);
-
-            // 4. Build children list, reusing the same eclass string for prefix:
-            //    Each child is an eclass‐ID, so we do "<child_eclass>.0"
-            let mut children = Vec::with_capacity(node.children().len());
-            for &child_id in node.children() {
-                // only one format! child_id is usize, so:
-                children.push(NodeId::from(format!("{}.0", child_id)));
-            }
-
             out.add_node(
-                node_id,
+                format!("{}.{}", class.id, i),
                 Node {
                     op: node.to_string(),
-                    children,
-                    // convert the eclass_str into a ClassId once:
-                    eclass: ClassId::from(eclass_str.clone()),
+                    children: node
+                        .children()
+                        .iter()
+                        .map(|id| NodeId::from(format!("{}.0", id)))
+                        .collect(),
+                    eclass: ClassId::from(format!("{}", class.id)),
                     cost: Cost::new(cost).unwrap(),
                 },
-            );
+            )
         }
     }
     out

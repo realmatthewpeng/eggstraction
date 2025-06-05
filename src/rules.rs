@@ -1,4 +1,4 @@
-use crate::analysis::{TypeAnalysis, FieldType};
+use crate::analysis::{TypeAnalysis};
 use crate::language::Math;
 use egg::{Rewrite, rewrite as rw, EGraph, Id, Subst};
 
@@ -10,11 +10,13 @@ fn is_not_same(a: &str, b: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id,
     }
 }
 
-fn is_constant(a: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id, &Subst) -> bool {
+fn is_same_field(a: &str, b: &str) -> impl Fn(&mut EGraph<Math, TypeAnalysis>, Id, &Subst) -> bool {
     let a = a.parse().unwrap();
+    let b = b.parse().unwrap();
     move |egraph, _, subst| {
         let ta = &egraph[egraph.find(subst[a])].data;
-        *ta == FieldType::Constant
+        let tb = &egraph[egraph.find(subst[b])].data;
+        *ta == *tb
     }
 }
 
@@ -53,7 +55,9 @@ pub fn rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
                                                             if is_not_same("?a", "?d")
                                                             if is_not_same("?b", "?c")
                                                             if is_not_same("?b", "?d") 
-                                                            if is_not_same("?c", "?d")),
+                                                            if is_not_same("?c", "?d")
+                                                            if is_same_field("?a", "?c")
+                                                            if is_same_field("?b", "?d")),
 
         // // Benchmark 2
         rw!("mul2-binomial";    "(* 2 (* ?a ?b))"   => "(- (- (sq (+ ?a ?b)) (sq ?a)) (sq ?b))"),
@@ -66,10 +70,10 @@ pub fn pair_rules() -> Vec<Rewrite<Math, TypeAnalysis>> {
 
     rw!("pair-add";         "(+ (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (+ ?a ?c) (+ ?b ?d))"),
     rw!("pair-sub";         "(- (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (- ?a ?c) (- ?b ?d))"),
-    rw!("pair-mul-const";   "(* (pair ?a ?b) ?c)"               =>  "(pair (* ?a ?c) (* ?b ?c))" if is_constant("?c")),
+    rw!("pair-mul-const";   "(* (pair ?a ?b) ?c)"               =>  "(pair (* ?a ?c) (* ?b ?c))" if is_same_field("?c", "?a")),
     rw!("pair-sq";          "(sq (pair ?a ?b))"                 =>  "(* (pair ?a ?b) (pair ?a ?b))"),
-    rw!("pair-mul";         "(* (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (+ (* ?a ?c) (* (* ?b ?d) xi)) (+ (* ?a ?d) (* ?b ?c)))"),
     // (a+bU)*(c+dU) = (a*c + a*dU + bU*c + bU*dU)
+    rw!("pair-mul";         "(* (pair ?a ?b) (pair ?c ?d))"     =>  "(pair (+ (* ?a ?c) (* (* ?b ?d) xi)) (+ (* ?a ?d) (* ?b ?c)))"),
 
     ]
 }
