@@ -1,0 +1,70 @@
+########################
+#  Source control
+########################
+.git
+.gitmodules
+.gitignore
+.gitattributes
+
+########################
+#  Build artifacts
+########################
+# Rust / Cargo
+target/
+**/target/
+cargo-cache/
+# C/​C++ object files (in case you have build.rs or C deps)
+**/*.o
+**/*.obj
+**/*.a
+**/*.so
+**/*.dylib
+**/*.dll
+# Binaries
+**/*.exe
+
+########################
+#  IDEs & editors
+########################
+.vscode/
+.idea/
+*.sw?
+*.swp
+*.swo
+*~
+
+########################
+#  CI & project tooling
+########################
+.github/
+.gitlab/
+.ci/
+.magefile
+
+########################
+#  Logs & temp files
+########################
+*.log
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*.patch
+.DS_Store
+Thumbs.db
+
+########################
+#  Secrets / env overrides
+########################
+.env
+.env.*
+*.key
+*.pem
+
+########################
+#  Documentation output
+########################
+/docs/book/          # mdBook output (if you use it)
+/book/               # other book outputs
+/coverage/           # cargo-tarpaulin, grcov, etc.
