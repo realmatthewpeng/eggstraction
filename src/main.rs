@@ -22,9 +22,9 @@ use rules::{rules, pair_rules};
 fn main() {
     env_logger::init();
 
-    let mut symbol_types_file = "symbol_types.json";
-    let mut cost_model_file = "cost_model.json";
-    let mut test_case_file = "tests.txt";
+    let mut symbol_types_file = "inputs/symbol_types.json";
+    let mut cost_model_file = "inputs/cost_model.json";
+    let mut test_case_file = "inputs/tests.txt";
 
     // Read command line arguments
     let args: Vec<String> = std::env::args().collect();

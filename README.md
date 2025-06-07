@@ -42,13 +42,13 @@ docker run --rm eggstraction
 
 #### Inputs
 
-| Flag(s)                | Argument | Purpose                                   | Default             |
-| ---------------------- | -------- | ----------------------------------------- | ------------------- |
-| `-h`, `--help`         | —        | Show help and exit                        | —                   |
-| `-t`, `--tests`        | *FILE*   | Path to test-case list                    | `tests.txt`         |
-| `-c`, `--cost_model`   | *FILE*   | Path to JSON cost model                   | `cost_model.json`   |
-| `-s`, `--symbol_types` | *FILE*   | Path to JSON symbol-type map              | `symbol_types.json` |
-| `-f`, `--full_search`  | —        | Enable quadratic-tower “full search” mode | off                 |
+| Flag(s)                | Argument | Purpose                                   | Default                    |
+| ---------------------- | -------- | ----------------------------------------- | -------------------------- |
+| `-h`, `--help`         | —        | Show help and exit                        | —                          |
+| `-t`, `--tests`        | *FILE*   | Path to test-case list                    | `inputs/tests.txt`         |
+| `-c`, `--cost_model`   | *FILE*   | Path to JSON cost model                   | `inputs/cost_model.json`   |
+| `-s`, `--symbol_types` | *FILE*   | Path to JSON symbol-type map              | `inputs/symbol_types.json` |
+| `-f`, `--full_search`  | —        | Enable quadratic-tower “full search” mode | off                        |
 
 
 

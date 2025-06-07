@@ -64,9 +64,9 @@ def run_optimizer(test_case_file, cost_model_file, symbol_types_file):
     return result
 
 parser = argparse.ArgumentParser(description="Run optimizer with custom cost and symbol files.")
-parser.add_argument("-t", "--tests", default="tests.txt", help="Path to tests txt file")
-parser.add_argument("-c", "--cost_model", default="cost_model.json", help="Path to cost model JSON file")
-parser.add_argument("-s", "--symbol_types", default="symbol_types.json", help="Path to symbol types JSON file")
+parser.add_argument("-t", "--tests", default="inputs/tests.txt", help="Path to tests txt file")
+parser.add_argument("-c", "--cost_model", default="inputs/cost_model.json", help="Path to cost model JSON file")
+parser.add_argument("-s", "--symbol_types", default="inputs/symbol_types.json", help="Path to symbol types JSON file")
 parser.add_argument('-f', '--full_search', action='store_true', help='Enable full search in other finite fields (towering)')
 args = parser.parse_args()
 
