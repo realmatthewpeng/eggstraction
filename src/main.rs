@@ -113,8 +113,8 @@ fn main() {
         let runner: Runner<Math, TypeAnalysis> =
             Runner::new(analysis.clone())
             .with_expr(&expr)
-            .with_iter_limit(100)
-            .with_node_limit(100_000)
+            //.with_iter_limit(100)
+            //.with_node_limit(100_000)
             .run(&rules());
         // for its in &runner.iterations {
         //     println!("{:?}", its.applied);
