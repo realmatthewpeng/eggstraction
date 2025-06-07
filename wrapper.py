@@ -56,7 +56,7 @@ def ast_to_sexpr(ast):
 def run_optimizer(test_case_file, cost_model_file, symbol_types_file):
     # Build and run the Rust project using Cargo
     result = subprocess.run(
-        ["cargo", "run", "--", symbol_types_file, cost_model_file, test_case_file],
+        ["cargo", "run", "--release", "--", symbol_types_file, cost_model_file, test_case_file],
         capture_output=True,
         text=True
     )
