@@ -1,6 +1,3 @@
-############################
-# 1️⃣  Build stage
-############################
 FROM rust:1.87-slim AS builder
 
 # Install system build tooling **and** CBC + headers
@@ -26,5 +23,3 @@ RUN cargo build --release
 
 # Default command
 ENTRYPOINT ["python3", "wrapper.py"]
-# If your program requires CLI args, replace ENTRYPOINT with CMD, e.g.:
-# CMD ["eggstraction", "--help"]

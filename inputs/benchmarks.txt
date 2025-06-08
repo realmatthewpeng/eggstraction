@@ -1,0 +1,61 @@
+// Benchmarks
+[Algorithm 5] Addition in Fp2
+[Symbol Types] a0, b0: fp2
+[Note: use -f option]
+(+ a0 b0)
+
+[Algorithm 6] Subtraction in Fp2
+[Symbol Types] a0, b0: fp2
+[Note: use -f option]
+(- a0 b0)
+
+[Algorithm 7] Multiplication by Fp
+[Symbol Types] a0: fp2, b0: fp
+[Note: use -f option]
+(* a0 b0)
+
+[Algorithm 9] Squaring in Fp4
+[Symbol Types] a0: fp4
+[Note: use -f option]
+(* a0 a0)
+
+[Algorithm 10] Addition in Fp6
+[Symbol Types] a0, a1, a2, b0, b1, b2: fp2
+(+ (pair a0 (pair a1 a2)) (pair b0 (pair b1 b2)))
+
+[Algorithm 11] Subtraction in Fp6
+[Symbol Types] a0, a1, a2, b0, b1, b2: fp2
+(- (pair a0 (pair a1 a2)) (pair b0 (pair b1 b2)))
+
+[Algorithm 14] Multiplication by Fp2
+[Symbol Types] a0, a1, a2, b0: fp2
+(* (pair a0 (pair a1 a2)) b0)
+
+[Algorithm 18] Addition in Fp12
+[Symbol Types] a0, b0: fp12
+[Note: use -f option]
+(+ a0 b0)
+
+[Algorithm 19] Subtraction in Fp12
+[Symbol Types] a0, b0: fp12
+[Note: use -f option]
+(- a0 b0)
+
+[Algorithm 20] Multiplication in Fp12
+[Symbol Types] a0, b0: fp12
+[Note: use -f option. Due to egraph blowup, the optimizer may not find the most optimal program within the timeout (3 minutes). However, if the
+commutativity and associativity rewrite rules are removed, then the original benchmark's fp6 program can be quickly reproduced.]
+(* a0 b0)
+
+
+// Other Tests (may be outdated)
+(pair (+ (* a0 a0) (* (* a1 a1) xi)) (* 2 (* a0 a1)))
+(pair (+ (* a0 a0) (* (* a1 a1) xi)) (+ (* a1 a0) (* a0 a1)))
+(pair (- (* a0 b0) (* a1 b1)) (+ (* a0 b1) (* a1 b0)))
+(pair (+ (* a0 b0) (* (* a1 b1) xi)) (+ (* a0 b1) (* a1 b0)))
+(pair (- (* a0 b0) (* (xi) (+ (* a1 b2) (* a2 b1)))) (pair (+ (* a0 b1) (+ (* a1 b0) (* (xi) (* a2 b2)))) (+ (* a0 b2) (+ (* a1 b1) (* a2 b0))) ))
+(- (- (+ (+ (sq a0) (* 2 (* a0 a1))) (sq a1)) (sq a1)) (sq a0))
+(pair (+ (sq a0) (* (sq a1) xi)) (+ (* a0 a1) (* a0 a1)))
+(- (- (* (+ a0 a1) (+ b0 b1)) (* a0 b0)) (* a1 b1))
+(pair (- (* b0 a0) (* a1 b1)) (- (- (* (+ a1 a0) (+ b0 b1)) (* a1 b1)) (* b0 a0)))
+(sq a0)

@@ -8,15 +8,15 @@
 
 ## ✨ What is it?
 
-`eggstraction` is a research prototype that **automatically rewrites finite-field expressions to lower cost on a given platform**, while _proving_ the optimized code is semantically equivalent to the original.
+`eggstraction` is a research prototype that **automatically rewrites finite-field expressions to lower cost on a given platform**, while _guaranteeing_ that the optimized code is semantically equivalent to the original.
 
 * **Equality-Saturation Core** – powered by the [`egg`](https://github.com/egraphs-good/egg) e-graph library.  
 * **DAG-Aware Extraction** – replaces greedy tree extraction with an **ILP formulation** solved by the open-source **CBC** solver.  
-* **Pluggable Cost Model** – read from JSON so you can dial costs for `mul`, `sq`, `const_mul`, … to match your hardware.  
-* **Tower-Field “Full Search”** – optional Python wrapper explores quadratic extensions (e.g. 𝔽<sub>p⁶</sub>, 𝔽<sub>p¹²</sub>) automatically.
+* **Customizable Cost Model** – read from JSON so you can dial costs for `mul`, `sq`, `const_mul`, … to match your hardware.  
+* **Towering-Field “Full Search”** – optional Python wrapper explores quadratic extensions (e.g. 𝔽<sub>p⁴</sub> → 𝔽<sub>p²</sub>) automatically.
 
 The result:  
-> > *31 → 26* operations on the running example, a 16 % reduction — and the proof is in the e-graph!
+> On the motivating example, `eggstraction` optimizes the cost from *31 → 26*, a 16% reduction!
 
 Slides of the full approach are in `docs/slides.pdf`.
 
@@ -28,19 +28,20 @@ Slides of the full approach are in `docs/slides.pdf`.
 
 ### 1 — Build the image
 
-```git clone https://github.com/realmatthewpeng/eggstraction.git
+```bash
+git clone https://github.com/realmatthewpeng/eggstraction.git
 cd eggstraction
 docker build -t eggstraction .
 ```
 
 ### 2 — Run the optimizer
 
-```
-# assumes the three input files live in the current directory
+```bash
+# Shows the result for the motiviating example
 docker run --rm eggstraction
 ```
 
-#### Inputs
+#### Command Line Options
 
 | Flag(s)                | Argument | Purpose                                   | Default                    |
 | ---------------------- | -------- | ----------------------------------------- | -------------------------- |
@@ -50,17 +51,17 @@ docker run --rm eggstraction
 | `-s`, `--symbol_types` | *FILE*   | Path to JSON symbol-type map              | `inputs/symbol_types.json` |
 | `-f`, `--full_search`  | —        | Enable quadratic-tower “full search” mode | off                        |
 
+#### Benchmarks
 
+The benchmarks we mention in our presentation can be found in `inputs/benchmarks.txt`. To replicate our results, copy the benchmark program into `inputs/tests.txt` and modify the cost model and symbol types JSON accordingly. Then, run the following command:
 
-#### Examples
-
-Run with custom paths:
+```bash
+docker run --rm -v $(pwd)/inputs:/inputs eggstraction \
+  -t /inputs/tests.txt \
+  -c /inputs/cost_model.json \
+  -s /inputs/symbol_types.json
 ```
-docker run --rm -v $(pwd):/inputs eggstraction \
-  -t /inputs/my_tests.txt \
-  -c /inputs/montgomery_costs.json \
-  -s /inputs/bn254_symbols.json
-```
 
+Please note that some benchmarks should be ran with the `-f` flag, in which case just add `-f` to the end of the above command. 
 
-## Happy optimizing!
+## Happy Optimizing!
