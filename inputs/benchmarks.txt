@@ -48,7 +48,7 @@ commutativity and associativity rewrite rules are removed, then the original ben
 (* a0 b0)
 
 
-// Other Tests (may be outdated)
+// Other Tests (mainly used for debugging)
 (pair (+ (* a0 a0) (* (* a1 a1) xi)) (* 2 (* a0 a1)))
 (pair (+ (* a0 a0) (* (* a1 a1) xi)) (+ (* a1 a0) (* a0 a1)))
 (pair (- (* a0 b0) (* a1 b1)) (+ (* a0 b1) (* a1 b0)))
